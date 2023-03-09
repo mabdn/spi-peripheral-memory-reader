@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h> 
 #include "component.h"
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
@@ -6,9 +7,10 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
 
+// Functions private / local to this file
+
 bool is_data_valid(unsigned char data);
-bool address_iterator_next() {return 0;};
-unsigned char read_command(unsigned char address) {return 0;};
+unsigned char read_command(unsigned char address) { return 0; };
 
 int main()
 {
@@ -18,7 +20,6 @@ int main()
     int c = is_data_valid(0x01);
     int d = is_data_valid(0x7b);
     int e = is_data_valid(0xa3);
-
 
     return 0;
     SET_CLK(true);
@@ -57,7 +58,7 @@ int read_memory_bytewise_with_log(int min_cycle_time, FILE *output_stream, bool 
     unsigned char address;
     unsigned char data;
 
-    while ((address = address_iterator_next()) >= 0)
+    while ((address_iterator_next(&address)) >= 0)
     {
 
         // Read data
@@ -102,3 +103,4 @@ bool is_data_valid(unsigned char data)
     }
     return parity;
 }
+
