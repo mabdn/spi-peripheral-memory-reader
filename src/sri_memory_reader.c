@@ -5,6 +5,9 @@
 
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
+#define READ_COMMAND_BYTE 0x55
+#define READ_COMMAND_PACKET_LENGTH 2 // in bytes
+#define DATA_RESPONSE_PACKET_LENGTH 1 // in bytes
 #define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
@@ -28,36 +31,13 @@ int main()
     int d = is_data_valid(0x7b);
     int e = is_data_valid(0xa3);
 
+
+    read_command(0x00);
+    read_command(0x81);
+    read_command(0x31);
+
     return 0;
-    SET_CLK(true);
-    unsigned char read_command = 0x55;
-    unsigned char address = 0x31;
-    unsigned char tail = 0x00;
-    long packet = tail << 2 * BYTE_SIZE | address << BYTE_SIZE | read_command;
-    packet = 0x003155003155;
-    long sent_mosi = 0;
-    long received_miso = 0;
-
-    SET_CLK(false);
-    for (int i = 0; i < 8 * BYTE_SIZE; i++)
-    {
-        printf("--- Cycle %d ---\n", i);
-
-        long mosi_bit = (packet >> i) & 1;
-        printf("mosi_bit: %d\n", mosi_bit);
-        SET_MOSI(mosi_bit);
-        sent_mosi = sent_mosi | (mosi_bit << i);
-
-        SET_CLK(true);
-
-        long miso_bit = READ_MISO();
-        printf("miso_bit: %d\n", miso_bit);
-        received_miso = received_miso | (miso_bit << i);
-
-        SET_CLK(false);
-    }
-    printf("sent_mosi    : %016lx\n", sent_mosi);
-    printf("received_miso: %016lx\n", received_miso);
+    
 }
 
 int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
@@ -71,7 +51,7 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, 
         // Read data
         for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
         {
-            data = read_command(address);
+            data = read_command(address); 
 
             if (is_data_valid(data))
             {
@@ -86,6 +66,9 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, 
                 if (use_log)
                     fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
             }
+
+            //TODO Wait until next cycle
+
         }
 
         // Output data
@@ -115,5 +98,37 @@ bool is_data_valid(unsigned char data)
 
 unsigned char read_command(unsigned char address)
 {
-    return 0;
+    int send_mosi = address << BYTE_SIZE | READ_COMMAND_BYTE;
+    int received_miso = 0;
+
+    int sent_mosi = 0; // TODO debug only
+
+    for (int i = 0; i < READ_COMMAND_PACKET_LENGTH * BYTE_SIZE; i++)
+    {
+        printf(" --- Cycle %d ---\n", i);
+        SET_CLK(true);
+
+        bool mosi_bit = (send_mosi >> i) & 1;
+        printf("mosi_bit: %d\n", mosi_bit);
+        SET_MOSI(mosi_bit);
+        sent_mosi = sent_mosi | (mosi_bit << i);
+
+
+
+
+        SET_CLK(false);
+    }
+    for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH * BYTE_SIZE; i++)
+    {
+        SET_CLK(true);
+        long miso_bit = READ_MISO();
+        printf("miso_bit: %d\n", miso_bit);
+        received_miso = received_miso | (miso_bit << i);
+        SET_CLK(false);
+    }
+
+    printf("sent_mosi    : %016lx\n", sent_mosi);
+    printf("received_miso: %016lx\n", received_miso);
+    
+    return received_miso;
 }
