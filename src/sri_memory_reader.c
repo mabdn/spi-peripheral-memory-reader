@@ -1,13 +1,17 @@
+#define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 #include "component.h"
 #include "address_iterator.h"
+
+
 
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
 #define READ_COMMAND_BYTE 0x55
-#define READ_COMMAND_PACKET_LENGTH 2 // in bytes
-#define DATA_RESPONSE_PACKET_LENGTH 1 // in bytes
+#define READ_COMMAND_PACKET_LENGTH 2 * BYTE_SIZE
+#define DATA_RESPONSE_PACKET_LENGTH 1 * BYTE_SIZE
 #define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
@@ -15,7 +19,7 @@
 // Functions private / local to this file
 
 bool is_data_valid(unsigned char data);
-unsigned char read_command(unsigned char address);
+unsigned char read_command(unsigned char address, struct timespec half_cycle_time);
 
 int main()
 {
@@ -31,10 +35,11 @@ int main()
     int d = is_data_valid(0x7b);
     int e = is_data_valid(0xa3);
 
+    struct timespec half_cycle_time = {0, 1000 / 2};
 
-    read_command(0x00);
-    read_command(0x81);
-    read_command(0x31);
+    read_command(0x00, half_cycle_time);
+    read_command(0x81, half_cycle_time);
+    read_command(0x31, half_cycle_time);
 
     return 0;
     
@@ -44,14 +49,20 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, 
 {
     unsigned char address;
     unsigned char data;
+    struct timespec half_cycle_time = {0, min_cycle_time / 2};
+    struct timespec current_time;
+    struct timespec end_of_cycle_time;
 
     while (address_iterator_next(&address))
     {
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        end_of_cycle_time = current_time;
+        end_of_cycle_time.tv_nsec += min_cycle_time;
 
         // Read data
         for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
         {
-            data = read_command(address); 
+            data = read_command(address, half_cycle_time);
 
             if (is_data_valid(data))
             {
@@ -73,6 +84,9 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, 
 
         // Output data
         fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
+
+        // Wait until next cycle
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &end_of_cycle_time, NULL);
     }
 }
 
@@ -96,39 +110,29 @@ bool is_data_valid(unsigned char data)
     return parity;
 }
 
-unsigned char read_command(unsigned char address)
+unsigned char read_command(unsigned char address, struct timespec half_cycle_time)
 {
     int send_mosi = address << BYTE_SIZE | READ_COMMAND_BYTE;
     int received_miso = 0;
 
-    int sent_mosi = 0; // TODO debug only
-
-    for (int i = 0; i < READ_COMMAND_PACKET_LENGTH * BYTE_SIZE; i++)
+    for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
     {
-        printf(" --- Cycle %d ---\n", i);
-        SET_CLK(true);
-
         bool mosi_bit = (send_mosi >> i) & 1;
-        printf("mosi_bit: %d\n", mosi_bit);
+        SET_CLK(true);
         SET_MOSI(mosi_bit);
-        sent_mosi = sent_mosi | (mosi_bit << i);
-
-
-
-
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
         SET_CLK(false);
     }
-    for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH * BYTE_SIZE; i++)
+    for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH; i++)
     {
         SET_CLK(true);
-        long miso_bit = READ_MISO();
-        printf("miso_bit: %d\n", miso_bit);
-        received_miso = received_miso | (miso_bit << i);
+        bool miso_bit = READ_MISO();
         SET_CLK(false);
+        received_miso = received_miso | (miso_bit << i);
     }
 
-    printf("sent_mosi    : %016lx\n", sent_mosi);
-    printf("received_miso: %016lx\n", received_miso);
+    printf("sent_mosi    : %04x\n", send_mosi);
+    printf("received_miso: %02x\n", received_miso);
     
     return received_miso;
 }
