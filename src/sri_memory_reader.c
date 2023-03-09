@@ -12,12 +12,17 @@
 // Functions private / local to this file
 
 bool is_data_valid(unsigned char data);
-unsigned char read_command(unsigned char address) { return 0; };
+unsigned char read_command(unsigned char address);
 
 int main()
 {
     printf("Hello World !\n");
     int a = sizeof(unsigned char);
+    int alpha = true;
+    while (alpha)
+    {
+        alpha = address_iterator_next(&a);
+    }
     int b = is_data_valid(0x00);
     int c = is_data_valid(0x01);
     int d = is_data_valid(0x7b);
@@ -55,7 +60,7 @@ int main()
     printf("received_miso: %016lx\n", received_miso);
 }
 
-int read_memory_bytewise_with_log(int min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
+int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
     unsigned char address;
     unsigned char data;
@@ -106,4 +111,9 @@ bool is_data_valid(unsigned char data)
         data = data & (data - 1);
     }
     return parity;
+}
+
+unsigned char read_command(unsigned char address)
+{
+    return 0;
 }
