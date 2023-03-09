@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include "component.h"
+#include "address_iterator.h"
+
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
 #define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
@@ -58,7 +60,7 @@ int read_memory_bytewise_with_log(int min_cycle_time, FILE *output_stream, bool 
     unsigned char address;
     unsigned char data;
 
-    while ((address_iterator_next(&address)) >= 0)
+    while (address_iterator_next(&address))
     {
 
         // Read data
@@ -69,13 +71,15 @@ int read_memory_bytewise_with_log(int min_cycle_time, FILE *output_stream, bool 
             if (is_data_valid(data))
             {
                 // Log success
-                if(use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
+                if (use_log)
+                    fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
                 break;
             }
             else
             {
                 // Log failure and retry
-                if(use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
+                if (use_log)
+                    fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
             }
         }
 
@@ -103,4 +107,3 @@ bool is_data_valid(unsigned char data)
     }
     return parity;
 }
-
