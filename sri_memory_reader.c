@@ -72,7 +72,7 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, FILE *log_stre
     }
 }
 
-// Variant of read_memory_bytewise() that does not use logs. This is code duplication but sensible in this case to improve performance.
+// Alternative template for bytewsie memory reading that does not use logs. This is code duplication but sensible in this case to improve performance.
 int read_memory_bytewise(int min_cycle_time, FILE *output_stream)
 {
     unsigned char address;
@@ -95,4 +95,23 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream)
         // Output data
         fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
     }
+}
+
+/*
+Time Complexity: The time taken by above algorithm is proportional to the number of bits set. Worst case complexity is O(Log n).
+Auxiliary Space: O(1)
+*/
+bool is_data_valid(unsigned char data)
+{
+    bool parity = 0;
+
+    // While there is a bit set anywhere in the data
+    while (data)
+    {
+        // Invert parity
+        parity = !parity;
+        // Unset the rightmost bit
+        data = data & (data - 1);
+    }
+    return parity;
 }
