@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include "component.h"
 #define BYTE_SIZE 8
+#define MAX_READ_ATTEMPTS 5
+#define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
+#define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
+#define DATA_OUTPUT_FORMAT "%c"
 
 int main()
 {
@@ -15,15 +19,17 @@ int main()
     long sent_mosi = 0;
     long received_miso = 0;
 
+    SET_CLK(false);
     for (int i = 0; i < 8 * BYTE_SIZE; i++)
     {
         printf("--- Cycle %d ---\n", i);
-        SET_CLK(true);
 
         long mosi_bit = (packet >> i) & 1;
         printf("mosi_bit: %d\n", mosi_bit);
         SET_MOSI(mosi_bit);
         sent_mosi = sent_mosi | (mosi_bit << i);
+
+        SET_CLK(true);
 
         long miso_bit = READ_MISO();
         printf("miso_bit: %d\n", miso_bit);
@@ -33,4 +39,103 @@ int main()
     }
     printf("sent_mosi    : %016lx\n", sent_mosi);
     printf("received_miso: %016lx\n", received_miso);
+}
+
+int read_memory_bytewise(int min_cycle_time, FILE *output_stream, FILE *log_stream)
+{
+    unsigned char address;
+    unsigned char data;
+
+    while ((address = address_iterator_next()) >= 0)
+    {
+
+        // Read data
+        for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
+        {
+            data = read_command(address);
+
+            if (is_data_valid(data))
+            {
+                // Log success
+                fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
+                break;
+            }
+            else
+            {
+                // Log failure and retry
+                fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
+            }
+        }
+
+        // Output data
+        fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
+    }
+}
+
+
+
+
+
+
+
+
+
+
+// Variant of read_memory_bytewise() that does not use logs. This is code duplication but sensible in this case to improve performance.
+int read_memory_bytewise(int min_cycle_time, FILE *output_stream)
+{
+    unsigned char address;
+    unsigned char data;
+
+    while ((address = address_iterator_next()) >= 0)
+    { // TODO need to hand address iterator with pointer?
+
+        // Read data
+        for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
+        {
+            data = read_command(address);
+
+            if (is_data_valid(data))
+            {
+                break;
+            }
+        }
+
+        // Output data
+        fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Time Complexity: The time taken by above algorithm is proportional to the number of bits set. Worst case complexity is O(Log n).
+Auxiliary Space: O(1)
+*/
+bool is_data_valid(unsigned char data)
+{
+    bool parity = 0;
+
+    // While there is a bit set anywhere in the data
+    while (data)
+    {
+        // Invert parity
+        parity = !parity;
+        // Unset the rightmost bit
+        data = data & (data - 1);
+    }
+    return parity;
 }
