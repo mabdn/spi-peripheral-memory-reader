@@ -5,8 +5,6 @@
 #include "component.h"
 #include "address_iterator.h"
 
-
-
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
 #define READ_COMMAND_BYTE 0x55
@@ -42,23 +40,16 @@ int main()
     read_command(0x31, half_cycle_time);
 
     return 0;
-    
 }
 
-int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
+int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
     unsigned char address;
     unsigned char data;
-    struct timespec half_cycle_time = {0, min_cycle_time / 2};
-    struct timespec current_time;
-    struct timespec end_of_cycle_time;
-
+    struct timespec half_cycle_time = {min_cycle_time.tv_sec / 2, min_cycle_time.tv_nsec / 2};
+    
     while (address_iterator_next(&address))
     {
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        end_of_cycle_time = current_time;
-        end_of_cycle_time.tv_nsec += min_cycle_time;
-
         // Read data
         for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
         {
@@ -77,16 +68,10 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, bool use_log, 
                 if (use_log)
                     fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
             }
-
-            //TODO Wait until next cycle
-
         }
 
         // Output data
         fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
-
-        // Wait until next cycle
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &end_of_cycle_time, NULL);
     }
 }
 
@@ -118,21 +103,27 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
     for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
     {
         bool mosi_bit = (send_mosi >> i) & 1;
+
         SET_CLK(true);
         SET_MOSI(mosi_bit);
         clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
         SET_CLK(false);
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
     }
+
     for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH; i++)
     {
         SET_CLK(true);
         bool miso_bit = READ_MISO();
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
         SET_CLK(false);
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
+
         received_miso = received_miso | (miso_bit << i);
     }
 
     printf("sent_mosi    : %04x\n", send_mosi);
     printf("received_miso: %02x\n", received_miso);
-    
+
     return received_miso;
 }
