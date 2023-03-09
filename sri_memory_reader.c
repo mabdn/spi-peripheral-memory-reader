@@ -6,10 +6,21 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
 
+bool is_data_valid(unsigned char data);
+bool address_iterator_next() {return 0;};
+unsigned char read_command(unsigned char address) {return 0;};
+
 int main()
 {
     printf("Hello World !\n");
-    int a = sizeof(long);
+    int a = sizeof(unsigned char);
+    int b = is_data_valid(0x00);
+    int c = is_data_valid(0x01);
+    int d = is_data_valid(0x7b);
+    int e = is_data_valid(0xa3);
+
+
+    return 0;
     SET_CLK(true);
     unsigned char read_command = 0x55;
     unsigned char address = 0x31;
@@ -41,7 +52,7 @@ int main()
     printf("received_miso: %016lx\n", received_miso);
 }
 
-int read_memory_bytewise(int min_cycle_time, FILE *output_stream, FILE *log_stream)
+int read_memory_bytewise_with_log(int min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
     unsigned char address;
     unsigned char data;
@@ -57,38 +68,13 @@ int read_memory_bytewise(int min_cycle_time, FILE *output_stream, FILE *log_stre
             if (is_data_valid(data))
             {
                 // Log success
-                fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
+                if(use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
                 break;
             }
             else
             {
                 // Log failure and retry
-                fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
-            }
-        }
-
-        // Output data
-        fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
-    }
-}
-
-// Alternative template for bytewsie memory reading that does not use logs. This is code duplication but sensible in this case to improve performance.
-int read_memory_bytewise(int min_cycle_time, FILE *output_stream)
-{
-    unsigned char address;
-    unsigned char data;
-
-    while ((address = address_iterator_next()) >= 0)
-    { // TODO need to hand address iterator with pointer?
-
-        // Read data
-        for (int retries = 0; retries < MAX_READ_ATTEMPTS; retries++)
-        {
-            data = read_command(address);
-
-            if (is_data_valid(data))
-            {
-                break;
+                if(use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
             }
         }
 
@@ -103,7 +89,8 @@ Auxiliary Space: O(1)
 */
 bool is_data_valid(unsigned char data)
 {
-    bool parity = 0;
+    // Start with uneven parity to get 1 as result <=> even parity in data
+    bool parity = 1;
 
     // While there is a bit set anywhere in the data
     while (data)
