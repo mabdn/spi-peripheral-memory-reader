@@ -23,7 +23,3 @@ $(BIN_DIR) $(OBJ_DIR):
 
 clean:
 	@$(RM) -rv $(BIN_DIR) $(OBJ_DIR)
-
-# read_cots_memory_app: sri_memory_reader.h sri_memory_reader.c component.h component.o address_iterator.h address_iterator.c
-# 	$(CC) $(CFLAGS) -o $@ sri_memory_reader.c component.o address_iterator.c
-
