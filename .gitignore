@@ -8,3 +8,6 @@ sri_memory_reader
 # Build
 obj
 bin
+
+# Testing
+*log.txt

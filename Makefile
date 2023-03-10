@@ -6,7 +6,7 @@ OBJ_DIR := obj
 BIN_DIR := bin
 LIB_DIR := lib
 
-EXE := $(BIN_DIR)/sri_memory_reader
+EXE := $(BIN_DIR)/spi_memory_reader
 SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
 OBJ_FILES := $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 LIB_FILES := $(wildcard $(LIB_DIR)/*.o)
