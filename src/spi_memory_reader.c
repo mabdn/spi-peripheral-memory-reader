@@ -18,8 +18,8 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
 #define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
 #define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
-#define DATA_OUTPUT_FORMAT "Read data: %c\n" // TODO Remove line break
-#define PATH_LOG_FILE "read_cots_memory_per_spi_app_log.txt"
+#define DATA_OUTPUT_FORMAT "%c" // TODO Remove line break
+#define PATH_LOG_FILE "read_cots_memory_via_spi_app_log.txt"
 
 // Functions private / local to this file
 
@@ -104,6 +104,7 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
         }
 
         // Output data
+        data = data >> 1; // Remove parity bit which is located in the LSB
         fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
     }
 
@@ -164,8 +165,7 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
 
         received_miso = received_miso | (miso_bit << i);
     }
-
-    printf("sent_mosi    : %04x\n", send_mosi);
+    printf("sent_mosi    : %04x\n", send_mosi); //TODO remove
     printf("received_miso: %02x\n", received_miso);
 
     return received_miso;
