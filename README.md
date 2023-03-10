@@ -1,3 +1,102 @@
+# Serial Peripheral Interface (SPI) Memory Reader
+
+## Description
+
+**Summary**: An application written in C for serial communication with a peripheral device on bit-level. Its goal is to read data from a peripheral storage device, correct transmission errors, and write the data to an output.
+
+In this project, I demonstrate skills in
+* programming in C, 
+* working with hardware devices on a low-level, 
+* maintaining balance between a reusable design and efficient code.
+
+TODO Add some introductory description here
+- Output File + Log File
+- SPI serial interface
+- Error correction via parity bits
+- A given set of memory addresses
+
+## Table of Contents 
+
+- [Problem Definition](#problem-definition)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Credits](#credits)
+- [License](#license)
+
+## Problem Definition
+
+TODO ~15min: Define the problem using SSRL's outline
+
+## Installation
+System Requirements:
+- GCC compiler installed
+- Make installed
+
+The project's compilation and installing is managed with Make. To run the application on your machine, follow these steps: 
+1. Clone the repository
+2. 
+    Open a terminal, switch your working directory to the repositories root, execute the command `make`:    
+    ```
+    $ make
+    ```
+    This will make use of the provided `Makefile` in the repositories root folder to compile and link the projects source files into an executable on your system. The executable is generated in the path `bin/read_cots_memory_via_spi_app`.
+
+
+## Usage
+
+For demonstartion reasons, the project comes with an example implementation of the peripheral device API. It is provided through a pre-compiled c object file which can be found in `lib/component.o`. 
+
+To use this project with your own peripheral device, you need to provide an implementation of the API interface in `src/component.h`. This interface is further explained in the [Problem Definition](#problem-definition).
+
+To use the application with the provided API implementation, follow the steps in [Installation](#installation) and execute the generated executable `bin/read_cots_memory_via_spi_app` on the command-line.
+
+The application will start and prompt for a frequency to interact with the peripheral device and name of an output file. 
+- The provided frequency is the frequency the application will use for serial communication with the peripheral device. More precicsely, it defines the clock frequency to use for the Serial Peripheral Interface (SPI) protocol.
+
+- The provided file specifies a path to where the the application should write the read memory content. 
+
+
+<img src="assets/images/readme_usage_frequency_and_output_file_prompt.png" alt="Application prompts for frequency and file name" style="width:400px;"/>
+
+After the user entered the required inputs, the application will confirm the inputs, read the memory from the peripheral device and return as soon as it is done reading.
+
+<img src="assets/images/readme_usage_application_returned.png" alt="Application returns after it is done" style="width:600px;"/>
+
+## Credits
+
+This project was made as a demonstartion of skills in C programming, embedded systems, and low-level hardware interaction in cooperation with the University of Georgia's Small Satellite Research Laboratory ([SSRL]((https://www.smallsat.uga.edu/))). The API for the peripheral component was created by them.
+
+## License
+
+Licensed under the [GNU General Public License](LICENSE).
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # UGA SSRL MOCI Flight Software Spring 2023 Take Home Project
 Congratulations on passing your first round of interviews for the UGA SSRL! Your Round 2 interview will be in the form of the Flight Software take-home project outlined in this document. If you have any questions in regards to the instructions or even if you need help or clarification with any part of the project, I highly encourage you to contact me at jcl71292@uga.edu. The projects will be scored based not only on whether project criteria are met, but also whether or not it is obvious that you put in effort into your submission. Don't fret if you can't get something working, just do your best work!
 
