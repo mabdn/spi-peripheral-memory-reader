@@ -4,15 +4,22 @@
 #include <time.h>
 #include "component.h"
 #include "address_iterator.h"
+#include "spi_memory_reader.h"
 
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
 #define READ_COMMAND_BYTE 0x55
 #define READ_COMMAND_PACKET_LENGTH 2 * BYTE_SIZE
 #define DATA_RESPONSE_PACKET_LENGTH 1 * BYTE_SIZE
+
+#define kHz_TO_ns(frequency) 1000000 / frequency
+
 #define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
-#define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x\n for the %d. time. Received data: 0x%02x\n"
-#define DATA_OUTPUT_FORMAT "%c"
+#define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
+#define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
+#define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
+#define DATA_OUTPUT_FORMAT "Read data: %c\n" // TODO Remove line break
+#define PATH_LOG_FILE "read_cots_memory_per_spi_app_log.txt"
 
 // Functions private / local to this file
 
@@ -21,6 +28,30 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
 
 int main()
 {
+    int frequency = 1000; // in kHz
+
+    // Calculate cycle time in nano seconds
+    struct timespec min_cycle_time = {0, kHz_TO_ns(frequency)};
+
+    FILE *output_stream = stdout;
+    FILE *log_stream = fopen(PATH_LOG_FILE, "w");
+
+    if (output_stream == NULL)
+    {
+        fprintf(stderr, MSG_ERROR_OPENING_OUTPUT_FILE);
+        exit(-1);
+    }
+    if (log_stream == NULL)
+    {
+        fprintf(stderr, MSG_ERROR_OPENING_LOG_FILE);
+        exit(-1);
+    }
+
+
+    read_memory_bytewise(min_cycle_time, output_stream, true, log_stream);
+
+    return 0;
+
     printf("Hello World !\n");
     int a = sizeof(unsigned char);
     int alpha = true;
@@ -34,7 +65,6 @@ int main()
     int e = is_data_valid(0xa3);
 
     struct timespec half_cycle_time = {0, 1000 / 2};
-
     read_command(0xA1, half_cycle_time);
     read_command(0x00, half_cycle_time);
     read_command(0x81, half_cycle_time);
@@ -50,7 +80,7 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
     unsigned char address;
     unsigned char data;
     struct timespec half_cycle_time = {min_cycle_time.tv_sec / 2, min_cycle_time.tv_nsec / 2};
-    
+
     while (address_iterator_next(&address))
     {
         // Read data
@@ -81,8 +111,9 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
 }
 
 /*
-Time Complexity: The time taken by above algorithm is proportional to the number of bits set. 
-Worst case complexity is O(Log n).
+Time Complexity: The time taken by above algorithm is proportional to the number of bits set.
+Realistic time complexity is O(number of bits set in data). 
+Thus, worst case complexity is w.r.t to word length l of data is O(l). 
 Auxiliary Space: O(1)
 */
 bool is_data_valid(unsigned char data)
@@ -101,7 +132,7 @@ bool is_data_valid(unsigned char data)
     return parity;
 }
 
-/* sleep command and loops could be rewritten in a way to avoid code duplication with method calls. 
+/* sleep command and loops could be rewritten in a way to avoid code duplication with method calls.
 However, I decided to accept the small amounto of code duplication here to achieve better efficiency.
 This code is at the heart of the program's communication with the peripheral device
 and should be as efficient as possible. */
@@ -120,7 +151,7 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
         SET_CLK(false);
         clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
     }
-     // Unset to avoid floating MOSI pin and thus preventing the peripheral device from answering
+    // Unset to avoid floating MOSI pin and thus preventing the peripheral device from answering
     SET_MOSI(false);
 
     for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH; i++)
