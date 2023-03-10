@@ -1,6 +1,7 @@
 #define _GNU_SOURCE // Sets POSIX test feature macro to get support for time.h
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
 #include "component.h"
 #include "address_iterator.h"
@@ -17,16 +18,18 @@
 #define DATA_OUTPUT_FORMAT "%c"
 
 
+/* Functions private / local to this file */
 
-// Functions private / local to this file
+bool is_data_valid(uint8_t data);
+uint8_t read_command(uint8_t address, struct timespec half_cycle_time);
 
-bool is_data_valid(unsigned char data);
-unsigned char read_command(unsigned char address, struct timespec half_cycle_time);
+
+/* Implementation */
 
 int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
-    unsigned char address;
-    unsigned char data;
+    uint8_t address;
+    uint8_t data;
     struct timespec half_cycle_time = {min_cycle_time.tv_sec / 2, min_cycle_time.tv_nsec / 2};
 
     while (address_iterator_next(&address))
@@ -53,7 +56,7 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
 
         // Output data
         data = data >> 1; // Remove parity bit which is located in the LSB
-        fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
+        fprintf(output_stream, DATA_OUTPUT_FORMAT, data);
     }
 
     return 0;
@@ -65,7 +68,7 @@ Realistic time complexity is O(number of bits set in data).
 Thus, worst case complexity is w.r.t to word length l of data is O(l). 
 Auxiliary Space: O(1)
 */
-bool is_data_valid(unsigned char data)
+bool is_data_valid(uint8_t data)
 {
     // Start with uneven parity to get 1 as result <=> even parity in data
     bool parity = 1;
@@ -85,10 +88,10 @@ bool is_data_valid(unsigned char data)
 However, I decided to accept the small amounto of code duplication here to achieve better efficiency.
 This code is at the heart of the program's communication with the peripheral device
 and should be as efficient as possible. */
-unsigned char read_command(unsigned char address, struct timespec half_cycle_time)
+uint8_t read_command(uint8_t address, struct timespec half_cycle_time)
 {
     int send_mosi = READ_COMMAND_BYTE << BYTE_SIZE | address;
-    unsigned char received_miso = 0;
+    uint8_t received_miso = 0;
 
     int packet_length_minus_1 = READ_COMMAND_PACKET_LENGTH - 1; // Pre-calculate for efficiency
 

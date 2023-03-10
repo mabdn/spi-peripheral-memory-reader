@@ -1,6 +1,7 @@
 #define _GNU_SOURCE // Sets POSIX test feature macro to get support for time.h
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
 #include "spi_memory_reader.h"
 
@@ -8,7 +9,7 @@
 
 #define MSG_GET_FREQUENCY "Enter frequency to use for SPI communication with COTS component:\n(in kHz; -1 for communication as fast as program can run):\n"
 #define MSG_GET_OUTPUT_FILE_NAME "Enter output file name (max. 63 characters):\n"
-#define MSG_STARTING_READING "Reading memory from COTS compenent with cycle time of %ld and writing to file %s.\n"
+#define MSG_STARTING_READING "Reading memory from COTS compenent with cycle time of %ldns and writing to file '%s'.\n"
 #define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
 #define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
 
