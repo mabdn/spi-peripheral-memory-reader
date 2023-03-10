@@ -1,4 +1,4 @@
-#define _GNU_SOURCE // Sets POSIX test feature macro to get clock_nanosleep() and CLOCK_MONOTONIC from time.h
+#define _GNU_SOURCE // Sets POSIX test feature macro to get support for time.h
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -12,68 +12,16 @@
 #define READ_COMMAND_PACKET_LENGTH 2 * BYTE_SIZE
 #define DATA_RESPONSE_PACKET_LENGTH 1 * BYTE_SIZE
 
-#define kHz_TO_ns(frequency) 1000000 / frequency
-
 #define MSG_LOG_DATA_TRANSFER_SUCCESS "Read address 0x%02x: 0x%02x (no error)\n"
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
-#define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
-#define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
 #define DATA_OUTPUT_FORMAT "%c"
-#define PATH_LOG_FILE "read_cots_memory_via_spi_app.log"
+
+
 
 // Functions private / local to this file
 
 bool is_data_valid(unsigned char data);
 unsigned char read_command(unsigned char address, struct timespec half_cycle_time);
-
-int main()
-{
-    int frequency = 1000; // in kHz
-
-    // Calculate cycle time in nano seconds
-    struct timespec min_cycle_time = {0, kHz_TO_ns(frequency)};
-
-    FILE *output_stream = fopen("out.txt", "w");
-    FILE *log_stream = fopen(PATH_LOG_FILE, "w");
-
-    if (output_stream == NULL)
-    {
-        fprintf(stderr, MSG_ERROR_OPENING_OUTPUT_FILE);
-        exit(-1);
-    }
-    if (log_stream == NULL)
-    {
-        fprintf(stderr, MSG_ERROR_OPENING_LOG_FILE);
-        exit(-1);
-    }
-
-
-    read_memory_bytewise(min_cycle_time, output_stream, true, log_stream);
-
-    return 0;
-
-    printf("Hello World !\n");
-    int a = sizeof(unsigned char);
-    int alpha = true;
-    while (alpha)
-    {
-        alpha = address_iterator_next(&a);
-    }
-    int b = is_data_valid(0x00);
-    int c = is_data_valid(0x01);
-    int d = is_data_valid(0x7b);
-    int e = is_data_valid(0xa3);
-
-    struct timespec half_cycle_time = {0, 1000 / 2};
-    read_command(0xA1, half_cycle_time);
-    read_command(0x00, half_cycle_time);
-    read_command(0x81, half_cycle_time);
-    read_command(0x31, half_cycle_time);
-    read_command(0x00, half_cycle_time);
-    read_command(0x81, half_cycle_time);
-
-    return 0;
-}
 
 int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
@@ -142,8 +90,6 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
     int send_mosi = READ_COMMAND_BYTE << BYTE_SIZE | address;
     unsigned char received_miso = 0;
 
-    int debug_mosi = 0;
-    int debug_miso = 0;
     int packet_length_minus_1 = READ_COMMAND_PACKET_LENGTH - 1; // Pre-calculate for efficiency
 
     for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
