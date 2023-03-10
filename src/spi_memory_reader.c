@@ -8,7 +8,7 @@
 
 #define BYTE_SIZE 8
 #define MAX_READ_ATTEMPTS 5
-#define READ_COMMAND_BYTE 0x55
+#define READ_COMMAND_BYTE 0xAA
 #define READ_COMMAND_PACKET_LENGTH 2 * BYTE_SIZE
 #define DATA_RESPONSE_PACKET_LENGTH 1 * BYTE_SIZE
 
@@ -18,8 +18,8 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
 #define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
 #define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
-#define DATA_OUTPUT_FORMAT "%c" // TODO Remove line break
-#define PATH_LOG_FILE "read_cots_memory_via_spi_app_log.txt"
+#define DATA_OUTPUT_FORMAT "%c"
+#define PATH_LOG_FILE "read_cots_memory_via_spi_app.log"
 
 // Functions private / local to this file
 
@@ -33,7 +33,7 @@ int main()
     // Calculate cycle time in nano seconds
     struct timespec min_cycle_time = {0, kHz_TO_ns(frequency)};
 
-    FILE *output_stream = stdout;
+    FILE *output_stream = fopen("out.txt", "w");
     FILE *log_stream = fopen(PATH_LOG_FILE, "w");
 
     if (output_stream == NULL)
@@ -139,12 +139,17 @@ This code is at the heart of the program's communication with the peripheral dev
 and should be as efficient as possible. */
 unsigned char read_command(unsigned char address, struct timespec half_cycle_time)
 {
-    int send_mosi = address << BYTE_SIZE | READ_COMMAND_BYTE;
-    int received_miso = 0;
+    int send_mosi = READ_COMMAND_BYTE << BYTE_SIZE | address;
+    unsigned char received_miso = 0;
+
+    int debug_mosi = 0;
+    int debug_miso = 0;
+    int packet_length_minus_1 = READ_COMMAND_PACKET_LENGTH - 1; // Pre-calculate for efficiency
 
     for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
     {
-        bool mosi_bit = (send_mosi >> i) & 1;
+        // Write data to MOSI MSB first, LSB last
+        bool mosi_bit = (send_mosi >> (packet_length_minus_1 - i)) & 1; 
 
         SET_CLK(true);
         SET_MOSI(mosi_bit);
@@ -163,10 +168,10 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
         SET_CLK(false);
         clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
 
-        received_miso = received_miso | (miso_bit << i);
+        // Data is received MSB first, LSB last
+        received_miso = received_miso << 1;
+        received_miso = received_miso | miso_bit;
     }
-    printf("sent_mosi    : %04x\n", send_mosi); //TODO remove
-    printf("received_miso: %02x\n", received_miso);
 
     return received_miso;
 }
