@@ -6,17 +6,21 @@
 
 #define kHz_TO_ns(frequency) 1000000 / frequency
 
-#define MSG_GET_FREQUENCY "Enter frequency to use for SPI communication with COTS component:\n (in kHz; -1 for communication as fast as program can run): "
+#define MSG_GET_FREQUENCY "Enter frequency to use for SPI communication with COTS component:\n(in kHz; -1 for communication as fast as program can run):\n"
+#define MSG_GET_OUTPUT_FILE_NAME "Enter output file name (max. 63 characters):\n"
+#define MSG_STARTING_READING "Reading memory from COTS compenent with cycle time of %ld and writing to file %s.\n"
 #define MSG_ERROR_OPENING_OUTPUT_FILE "Error opening output file. Aborting.\n"
 #define MSG_ERROR_OPENING_LOG_FILE "Error opening log file. Aborting.\n"
 
 #define PATH_LOG_FILE "read_cots_memory_via_spi_app.log"
 
+// Assumes that the user cooperates. The user shall could exploit the program by entering malicious frequency or file name! 
+// Security vulnerabilities with user interaction are no concern for this project, though.
 int main()
 {
     // Ask user for frequency in kHz
-    int frequency;
     printf(MSG_GET_FREQUENCY);
+    int frequency;
     scanf("%d", &frequency);
 
     // Calculate cycle time in nano seconds if frequency is valid. Else use cycle time 0
@@ -27,12 +31,12 @@ int main()
     }
 
     // Ask user for output file name
-    // TODO use safe scanf
+    printf(MSG_GET_OUTPUT_FILE_NAME);
+    char output_file_name[64];
+    scanf("%63s", output_file_name);
     
-
-    FILE *output_stream = fopen("out.txt", "w");
+    FILE *output_stream = fopen(output_file_name, "w");
     FILE *log_stream = fopen(PATH_LOG_FILE, "w");
-
     if (output_stream == NULL)
     {
         fprintf(stderr, MSG_ERROR_OPENING_OUTPUT_FILE);
@@ -44,6 +48,7 @@ int main()
         return -1;
     }
 
+    printf(MSG_STARTING_READING, min_cycle_time.tv_nsec, output_file_name);
     read_memory_bytewise(min_cycle_time, output_stream, true, log_stream);
 
     return 0;
