@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 199309L
+#define _GNU_SOURCE // Sets POSIX test feature macro to get clock_nanosleep() and CLOCK_MONOTONIC from time.h
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
@@ -35,9 +35,12 @@ int main()
 
     struct timespec half_cycle_time = {0, 1000 / 2};
 
+    read_command(0xA1, half_cycle_time);
     read_command(0x00, half_cycle_time);
     read_command(0x81, half_cycle_time);
     read_command(0x31, half_cycle_time);
+    read_command(0x00, half_cycle_time);
+    read_command(0x81, half_cycle_time);
 
     return 0;
 }
@@ -73,10 +76,13 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
         // Output data
         fprintf(output_stream, DATA_OUTPUT_FORMAT, data); // TODO insert line breaks if necessary
     }
+
+    return 0;
 }
 
 /*
-Time Complexity: The time taken by above algorithm is proportional to the number of bits set. Worst case complexity is O(Log n).
+Time Complexity: The time taken by above algorithm is proportional to the number of bits set. 
+Worst case complexity is O(Log n).
 Auxiliary Space: O(1)
 */
 bool is_data_valid(unsigned char data)
@@ -95,6 +101,10 @@ bool is_data_valid(unsigned char data)
     return parity;
 }
 
+/* sleep command and loops could be rewritten in a way to avoid code duplication with method calls. 
+However, I decided to accept the small amounto of code duplication here to achieve better efficiency.
+This code is at the heart of the program's communication with the peripheral device
+and should be as efficient as possible. */
 unsigned char read_command(unsigned char address, struct timespec half_cycle_time)
 {
     int send_mosi = address << BYTE_SIZE | READ_COMMAND_BYTE;
@@ -110,6 +120,8 @@ unsigned char read_command(unsigned char address, struct timespec half_cycle_tim
         SET_CLK(false);
         clock_nanosleep(CLOCK_MONOTONIC, 0, &half_cycle_time, NULL);
     }
+     // Unset to avoid floating MOSI pin and thus preventing the peripheral device from answering
+    SET_MOSI(false);
 
     for (int i = 0; i < DATA_RESPONSE_PACKET_LENGTH; i++)
     {
