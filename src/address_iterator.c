@@ -7,6 +7,7 @@
 
 int address_counter = START_ADDRESS;
 
+// Documentation in header file
 bool address_iterator_next(uint8_t *address)
 {
     if (address_counter > END_ADDRESS) {

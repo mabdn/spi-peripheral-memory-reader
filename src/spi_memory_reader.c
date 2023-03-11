@@ -17,15 +17,15 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
 
-
-/* Functions private / local to this file */
+/* -- Functions private / local to this file -- */
 
 bool is_data_valid(uint8_t data);
 uint8_t read_command(uint8_t address, struct timespec half_cycle_time);
 
 
-/* Implementation */
+/* -- Implementation -- */
 
+// Documentation in header file
 int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bool use_log, FILE *log_stream)
 {
     uint8_t address;
@@ -42,15 +42,13 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
             if (is_data_valid(data))
             {
                 // Log success
-                if (use_log)
-                    fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
+                if (use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
                 break;
             }
             else
             {
                 // Log failure and retry
-                if (use_log)
-                    fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
+                if (use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_FAILED, address, retries, data);
             }
         }
 
@@ -63,11 +61,19 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
 }
 
 /*
-Time Complexity: The time taken by above algorithm is proportional to the number of bits set.
-Realistic time complexity is O(number of bits set in data). 
-Thus, worst case complexity is w.r.t to word length l of data is O(l). 
-Auxiliary Space: O(1)
-*/
+ * Checks whether a given data byte is valid.
+ *
+ * This method encapsulates the logic to determine whether a data byte is valid. In this case,
+ * it is a parity check. The data is valid if the number of bits set is even.
+ *
+ * Time Complexity: The time taken by the algorithm is proportional to the number of bits set.
+ * Realistic time complexity is O(number of bits set in data).
+ * Thus, worst case complexity is w.r.t to word length l of data is O(l).
+ * Auxiliary Space: O(1)
+ *
+ * @param data The data byte to check for validity.
+ * @return True if the data is valid, false otherwise.
+ */
 bool is_data_valid(uint8_t data)
 {
     // Start with uneven parity to get 1 as result <=> even parity in data
@@ -84,10 +90,21 @@ bool is_data_valid(uint8_t data)
     return parity;
 }
 
-/* sleep command and loops could be rewritten in a way to avoid code duplication with method calls.
-However, I decided to accept the small amounto of code duplication here to achieve better efficiency.
-This code is at the heart of the program's communication with the peripheral device
-and should be as efficient as possible. */
+/*
+ * Executes the read command via SPI by sending the necessary bit-level signals to the device.
+ *
+ * This method encapsulates the logic of the SPI protocol.
+ *
+ * Sleep commands and loops could be rewritten by delegating them to method calls
+ * to avoid code duplication. However, I decided to accept the small amount of code duplication here
+ * to achieve better efficiency.
+ * This code is at the heart of the program's communication with the peripheral device
+ * and should be as efficient as possible.
+ *
+ * @param address The address to read the data from.
+ * @param half_cycle_time The time between two consecutive SPI signal edges.
+ * @return The read data byte.
+ */
 uint8_t read_command(uint8_t address, struct timespec half_cycle_time)
 {
     int send_mosi = READ_COMMAND_BYTE << BYTE_SIZE | address;
@@ -98,7 +115,7 @@ uint8_t read_command(uint8_t address, struct timespec half_cycle_time)
     for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
     {
         // Write data to MOSI MSB first, LSB last
-        bool mosi_bit = (send_mosi >> (packet_length_minus_1 - i)) & 1; 
+        bool mosi_bit = (send_mosi >> (packet_length_minus_1 - i)) & 1;
 
         SET_CLK(true);
         SET_MOSI(mosi_bit);

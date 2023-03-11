@@ -1,4 +1,7 @@
-/* component.h */
+/* 
+ * The interface for the given API. 
+ * A black-box implementation of this interface is provided in the lib/component.o file.
+ */
 #include <stdbool.h>
 #include <stdint.h>
 

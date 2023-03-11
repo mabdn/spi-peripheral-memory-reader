@@ -15,8 +15,34 @@
 
 #define PATH_LOG_FILE "read_cots_memory_via_spi_app.log"
 
-// Assumes that the user cooperates. The user shall could exploit the program by entering malicious frequency or file name! 
-// Security vulnerabilities with user interaction are no concern for this project, though.
+/*
+ * Main entry point of the application. Interacts with the user and calls
+ * the actual application logic.
+ * 
+ * Can be seen as a the view and controller in the MVC pattern. The model
+ * are all remaining files.
+ * 
+ * The application prompts the user for a frequency to interact with
+ * the peripheral device and name of an output file. 
+ * 
+ *  - The provided frequency is the frequency the application will use
+ *    for serial communication with the peripheral device. 
+ *    More precisely, it defines the clock frequency to use for the 
+ *    Serial Peripheral Interface (SPI) protocol.
+ *
+ *  - The provided file specifies a path to where the application should
+ *    write the read memory content.  
+ * 
+ * Additionally, the application will create a log file in the same
+ * directory as the executable. The log file will contain information
+ * about the data transfer.
+ * 
+ * Assumes that the user cooperates. The user could exploit the program by
+ * entering malicious a frequency or file name! Security vulnerabilities 
+ * with user interaction are no concern for this project, though.
+ * 
+ * @return 0 on success, -1 on error.
+ */
 int main()
 {
     // Ask user for frequency in kHz
@@ -49,6 +75,7 @@ int main()
         return -1;
     }
 
+    // Execute application logic
     printf(MSG_STARTING_READING, min_cycle_time.tv_nsec, output_file_name);
     read_memory_bytewise(min_cycle_time, output_stream, true, log_stream);
 
