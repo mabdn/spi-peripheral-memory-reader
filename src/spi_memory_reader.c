@@ -17,7 +17,7 @@
 #define MSG_LOG_DATA_TRANSFER_FAILED "Data invalid while reading 0x%02x for the %d. time. Received data: 0x%02x\n"
 #define DATA_OUTPUT_FORMAT "%c"
 
-/* -- Functions private / local to this file -- */
+/* -- Functions private/local to this file -- */
 
 bool is_data_valid(uint8_t data);
 uint8_t read_command(uint8_t address, struct timespec half_cycle_time);
@@ -41,7 +41,7 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
 
             if (is_data_valid(data))
             {
-                // Log success
+                // Log success and next
                 if (use_log) fprintf(log_stream, MSG_LOG_DATA_TRANSFER_SUCCESS, address, data);
                 break;
             }
@@ -68,7 +68,7 @@ int read_memory_bytewise(struct timespec min_cycle_time, FILE *output_stream, bo
  *
  * Time Complexity: The time taken by the algorithm is proportional to the number of bits set.
  * Realistic time complexity is O(number of bits set in data).
- * Thus, worst case complexity is w.r.t to word length l of data is O(l).
+ * Thus, worst case complexity w.r.t to word length L of data is O(L).
  * Auxiliary Space: O(1)
  *
  * @param data The data byte to check for validity.
@@ -101,9 +101,9 @@ bool is_data_valid(uint8_t data)
  * This code is at the heart of the program's communication with the peripheral device
  * and should be as efficient as possible.
  *
- * @param address The address to read the data from.
+ * @param address The peripheral device's memory address to read data from.
  * @param half_cycle_time The time between two consecutive SPI signal edges.
- * @return The read data byte.
+ * @return The byte of data read from the peripheral device's memory.
  */
 uint8_t read_command(uint8_t address, struct timespec half_cycle_time)
 {
@@ -115,7 +115,8 @@ uint8_t read_command(uint8_t address, struct timespec half_cycle_time)
     for (int i = 0; i < READ_COMMAND_PACKET_LENGTH; i++)
     {
         // Write data to MOSI MSB first, LSB last
-        bool mosi_bit = (send_mosi >> (packet_length_minus_1 - i)) & 1;
+        // Get bit at position i of send_mosi starting from MSB
+        bool mosi_bit = (send_mosi >> (packet_length_minus_1 - i)) & 1; 
 
         SET_CLK(true);
         SET_MOSI(mosi_bit);

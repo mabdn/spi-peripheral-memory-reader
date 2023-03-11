@@ -19,7 +19,7 @@
  * Main entry point of the application. Interacts with the user and calls
  * the actual application logic.
  * 
- * Can be seen as a the view and controller in the MVC pattern. The model
+ * Can be seen as the view and controller in the MVC pattern. The model
  * are all remaining files.
  * 
  * The application prompts the user for a frequency to interact with
