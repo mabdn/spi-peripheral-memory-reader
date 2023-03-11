@@ -2,9 +2,9 @@
 
 ## Description
 
-**Summary**: An application written in C for serial communication with a peripheral device on a bit-level. Its goal is to read data from a peripheral storage device, correct transmission errors, and write the data to an output.
+**Summary**: An application written in C for serial communication with a peripheral device on a bit-level. Its goal is to read data from a peripheral memory device, correct transmission errors, and write the data to an output.
 
-Given a peripheral storage device, this application communicates with it via the Serial Peripheral Interface (SPI) protocol. Therefore, the device has to implement the given API (see [API definition](#given-api-definition)). Then, the application uses this API to communicate with the device by sending binary signals to the device and receiving binary signals from the device.
+Given a peripheral memory device, this application communicates with it via the Serial Peripheral Interface (SPI) protocol. Therefore, the device has to implement the given API (see [API definition](#given-api-definition)). Then, the application uses this API to communicate with the device by sending binary signals to the device and receiving binary signals from the device.
 
 In this project, I demonstrate skills in
 * programming in C, 
@@ -25,18 +25,18 @@ In this project, I demonstrate skills in
 
 Assume a peripheral device, for instance, a Commercial Off-the-Shelf (COTS) component, is given. Further, the device has an addressable memory. The goal is to obtain the content of this memory. The device provides an API to communicate with it by sending raw bits in a specified packet format. Thus, the problem is to build an application that uses this API to 
 
-   - read data from every address on the component,
+   - read data from every address of the device's memory,
    - detect and correct errors in the data by re-requesting the data,
-   - print the contents of the component memory to a human-readable plain-text file.
+   - print the contents of the memory to a human-readable plain-text file.
 
-A short and potentially faulty documentation of the API exists. Other details need to be derived from testing. An implementation of the API is given for a software mock device (i.e., no real physical hardware is used). 
+A short and potentially faulty documentation of the API exists and follows. Other details had to be derived from testing. An implementation of the API is given for a software mock device (i.e., no real physical hardware is used). 
 
 ### Given API Definition
-The following is the definition of the API. It comes with 
-- `src/component.h`: An interface definition of the provided methods in c
+The following is the definition of the API. It comes with:
+- `src/component.h`: An interface definition of the provided methods in C
 - `lib/component.o`: An implementation of the API for an imaginary device in pure software. It can be used to examine the specifics of the API and test the functionality of the developed app
 
-The device communicates through the API via the Serial Peripheral Interface (SPI) protocol in mode 1 (CPOL=0, CPHA=1). For raw bit communication, three logic signals are used. The first is a clock line that switches back and forth between high and low.
+The device communicates through the API via the Serial Peripheral Interface (SPI) protocol in [mode 1 (CPOL=0, CPHA=1)](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface). For raw bit communication, three logic signals are used. The first is a clock line that switches back and forth between high and low.
 In addition to this clock line, are two data lines for communication. One from the application into the device (Master Out Slave In, or MOSI) and one from the device into the application (Master In Slave Out, MISO). On each rising edge of the clock line, the device will sample the level of the MOSI line, and if any data is to be sent back, the MISO line will also switch its level on the rising clock edge. A timing diagram for this communication is provided below, with the dotted line indicating when a bit is sampled or set: 
 
 <img src="assets/images/readme_api_definition_spi_timing_diagram.png" alt="SPI Timing Diagram" style="width:600px;"/>
