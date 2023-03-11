@@ -4,16 +4,12 @@
 
 **Summary**: An application written in C for serial communication with a peripheral device on a bit-level. Its goal is to read data from a peripheral storage device, correct transmission errors, and write the data to an output.
 
+Given a peripheral storage device, this application communicates with it via the Serial Peripheral Interface (SPI) protocol. Therefore, the device has to implement the given API (see [API definition](#given-api-definition)). Then, the application uses this API to communicate with the device by sending binary signals to the device and receiving binary signals from the device.
+
 In this project, I demonstrate skills in
 * programming in C, 
 * working with hardware devices on a low level, 
 * maintaining a balance between a reusable design and efficient code.
-
-TODO Add some introductory description here
-- Output File + Log File
-- SPI serial interface
-- Error correction via parity bits
-- A given set of memory addresses
 
 ## Table of Contents 
 
@@ -40,7 +36,7 @@ The following is the definition of the API. It comes with
 - `src/component.h`: An interface definition of the provided methods in c
 - `lib/component.o`: An implementation of the API for an imaginary device in pure software. It can be used to examine the specifics of the API and test the functionality of the developed app
 
-The device communicates through the API via the Serial Peripheral Interface (SPI) protocol. For raw bit communication, three logic signals are used. The first is a clock line that switches back and forth between high and low.
+The device communicates through the API via the Serial Peripheral Interface (SPI) protocol in mode 1 (CPOL=0, CPHA=1). For raw bit communication, three logic signals are used. The first is a clock line that switches back and forth between high and low.
 In addition to this clock line, are two data lines for communication. One from the application into the device (Master Out Slave In, or MOSI) and one from the device into the application (Master In Slave Out, MISO). On each rising edge of the clock line, the device will sample the level of the MOSI line, and if any data is to be sent back, the MISO line will also switch its level on the rising clock edge. A timing diagram for this communication is provided below, with the dotted line indicating when a bit is sampled or set: 
 
 <img src="assets/images/readme_api_definition_spi_timing_diagram.png" alt="SPI Timing Diagram" style="width:600px;"/>
@@ -60,7 +56,9 @@ The device is treated as a black box. The only fact that is assumed about the de
 The command for reading data is `0x55`. The data byte will consist of 7 data bits, with the least significant bit acting as an even parity bit. For this project, we assume that any error in the data resulted in an odd number of bits flipping. The 7 bits of data will be encoded in 7-bit ASCII.
 
 ## Solution
-The application is structured in the following architecture. Each box in the diagram stands for a method in C. The dashed lines indicate how the methods are separated into different files.
+The application is structured in the following design. Each box in the diagram stands for a method in C. The vertical lines indicate how the methods are separated into different files.
+
+<img src="assets/images/readme_solution_architecture.png" alt="Project Architecture Diagram" style="width:700px;"/>
 
 
 ## Installation
@@ -94,7 +92,8 @@ The application will start and prompt for a frequency to interact with the perip
 
 <img src="assets/images/readme_usage_frequency_and_output_file_prompt.png" alt="Application prompts for frequency and file name" style="width:400px;"/>
 
-After the user entered the required inputs, the application will confirm the inputs, read the memory from the peripheral device, and return as soon as it is done reading.
+After the user entered the required inputs, the application will confirm the inputs, read the memory from the peripheral device, and return as soon as it is done reading. It also creates a log file in the same folder as the executable which
+shows the errors and corrections during data transfer.
 
 <img src="assets/images/readme_usage_application_returned.png" alt="Application returns after it is done" style="width:600px;"/>
 
